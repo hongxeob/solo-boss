@@ -70,16 +70,65 @@ export OPENAI_API_KEY=your-key
 ./gradlew bootRun
 ```
 
+## 엔티티 관계도
+
+```
+Customer (1) <--- (*) Consultation
+    |                     |
+    |                     +--- (0..1) IngestJob
+    |
+    +--- (*) FollowUpTask
+
+IngestJob (1) --- (0..1) ReviewTask
+```
+
+- 엔티티 간 참조는 UUID ID 참조 (`@ManyToOne` 대신), FK는 SQL에서 강제
+- JPA 엔티티는 `class` 사용 (`data class` X — equals/hashCode/copy 문제 방지)
+- 모든 엔티티에 `owner_id` 컬럼 (멀티테넌시)
+- 벡터 임베딩: Spring AI PgVectorStore 기본 테이블 사용 (metadata 필터링)
+
+## 상태 머신
+
+### IngestJob
+```
+RECEIVED → OCR_DONE → STRUCTURED → AUTO_SAVED (confidence >= 0.85)
+                                 → NEEDS_REVIEW (confidence < 0.85)
+                                 → FAILED
+NEEDS_REVIEW → EXPIRED
+```
+
+### ReviewTask
+```
+OPEN → IN_PROGRESS → RESOLVED
+IN_PROGRESS → OPEN (임시 이탈)
+OPEN/IN_PROGRESS → EXPIRED
+```
+
+### FollowUpTask
+```
+SCHEDULED → DRAFT_READY → SENT / EDITING / SNOOZED
+EDITING → SENT
+SNOOZED → DRAFT_READY
+SCHEDULED/DRAFT_READY/EDITING/SNOOZED → CANCELED
+```
+
+## 신뢰도 데이터
+
+- `overall_confidence`: 전용 DOUBLE 컬럼 (0.85 임계치 쿼리용)
+- 필드별 신뢰도: `extraction_result` JSONB 컬럼 (`ExtractionResult` VO)
+- `ConfidenceField<T>(value, confidence)` 구조
+
 ## 구현 로드맵
 
-1. ~~프로젝트 스캐폴딩 + CLAUDE.md~~ ← 현재 단계
-2. Customer CRUD (엔티티, 리포지토리, 서비스, 컨트롤러, Flyway 마이그레이션)
-3. 스크린샷 OCR 추출 (Spring AI multimodal + Claude Vision)
-4. Interaction CRUD (상담 기록)
-5. 상담 임베딩 + 벡터 저장소 설정
-6. 관계 메모리 검색 + 요약
-7. 팔로업 메시지 생성
-8. 배치 생성 및 스케줄링
+1. ~~프로젝트 스캐폴딩 + CLAUDE.md~~
+2. ~~전체 도메인 모델 (엔티티, 리포지토리, Flyway V2~V6)~~
+3. Customer CRUD (서비스, 컨트롤러, DTO)
+4. 스크린샷 OCR 추출 (Spring AI multimodal + Claude Vision)
+5. Interaction CRUD (상담 기록)
+6. 상담 임베딩 + 벡터 저장소 설정
+7. 관계 메모리 검색 + 요약
+8. 팔로업 메시지 생성
+9. 배치 생성 및 스케줄링
 
 ## 코드 컨벤션
 
