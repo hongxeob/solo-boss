@@ -27,6 +27,7 @@ Thumbs.db
 # Node
 node_modules/
 frontend/.next/
+frontend/next-env.d.ts
 frontend/out/
 frontend/build/
 .npm/

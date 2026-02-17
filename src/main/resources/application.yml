@@ -3,7 +3,7 @@ spring:
     name: soloboss-ai
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/soloboss
+    url: jdbc:postgresql://localhost:5433/soloboss
     username: ${DB_USERNAME:soloboss}
     password: ${DB_PASSWORD:soloboss}
 
@@ -45,7 +45,7 @@ spring:
         dimensions: 1536
 
 server:
-  port: 8080
+  port: 8082
 
 logging:
   level:

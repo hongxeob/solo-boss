@@ -1,7 +1,7 @@
 import { ClientDetail, ClientItem, MessageDraft, ReviewItem, StatsData } from '../types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
-const OWNER_ID = process.env.NEXT_PUBLIC_OWNER_ID || '11111111-1111-1111-1111-111111111111';
+const API_BASE_URL = 'http://localhost:8082/api/v1';
+const OWNER_ID = '11111111-1111-1111-1111-111111111111';
 
 type PageResponse<T> = {
   content: T[];
@@ -107,14 +107,22 @@ export const api = {
 
   // --- Customers (고객 관리) ---
   async getClients(): Promise<ClientItem[]> {
-    const res = await fetch(`${API_BASE_URL}/customers?ownerId=${OWNER_ID}`);
-    if (!res.ok) throw new Error('Failed to fetch clients');
+    const res = await fetch(`${API_BASE_URL}/customers?ownerId=${OWNER_ID}&page=0&size=50`);
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('Customer fetch error:', errorText);
+      throw new Error(`Failed to fetch clients: ${res.status}`);
+    }
     const page = (await res.json()) as PageResponse<CustomerResponse>;
+    
+    // content가 없는 경우에 대한 방어 코드 추가
+    if (!page.content) return [];
+    
     return page.content.map((client) => ({
       id: client.id,
       name: client.name,
-      company: client.projectType ?? '프로젝트 미지정',
-      tags: ['고객'],
+      company: client.projectType || '프로젝트 미지정',
+      tags: client.email ? ['이메일 보유'] : ['연락처 확인'],
     }));
   },
 
@@ -137,7 +145,11 @@ export const api = {
   // --- Statistics (통계) ---
   async getStats(): Promise<StatsData> {
     const res = await fetch(`${API_BASE_URL}/stats?ownerId=${OWNER_ID}`);
-    if (!res.ok) throw new Error('Failed to fetch stats');
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('Stats fetch error:', errorText);
+      throw new Error(`Failed to fetch stats: ${res.status}`);
+    }
     return res.json();
   },
 };

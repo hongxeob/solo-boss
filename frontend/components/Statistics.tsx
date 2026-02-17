@@ -8,10 +8,12 @@ import { TrendingUp, Timer, Target, BarChart3 } from 'lucide-react';
 export default function Statistics() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     api.getStats()
       .then(setStats)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -21,7 +23,12 @@ export default function Statistics() {
     </div>
   );
 
-  if (!stats) return null;
+  if (error || !stats) return (
+    <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+      <p>리포트 데이터를 불러올 수 없습니다.</p>
+      <p className="text-xs mt-2">서버 연결 상태와 OWNER_ID를 확인해주세요.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
