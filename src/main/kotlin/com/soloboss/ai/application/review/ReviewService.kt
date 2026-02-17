@@ -1,8 +1,13 @@
 package com.soloboss.ai.application.review
 
+import com.soloboss.ai.domain.customer.Customer
+import com.soloboss.ai.domain.customer.CustomerSource
+import com.soloboss.ai.domain.interaction.Consultation
 import com.soloboss.ai.domain.interaction.IngestJobStatus
 import com.soloboss.ai.domain.interaction.ReviewTask
 import com.soloboss.ai.domain.interaction.ReviewTaskStatus
+import com.soloboss.ai.infrastructure.persistence.ConsultationRepository
+import com.soloboss.ai.infrastructure.persistence.CustomerRepository
 import com.soloboss.ai.infrastructure.persistence.IngestJobRepository
 import com.soloboss.ai.infrastructure.persistence.ReviewTaskRepository
 import jakarta.persistence.EntityNotFoundException
@@ -17,6 +22,8 @@ import java.util.UUID
 class ReviewService(
     private val reviewTaskRepository: ReviewTaskRepository,
     private val ingestJobRepository: IngestJobRepository,
+    private val customerRepository: CustomerRepository,
+    private val consultationRepository: ConsultationRepository,
 ) {
     fun list(
         ownerId: UUID,
@@ -65,9 +72,73 @@ class ReviewService(
 
         val ingestJob = ingestJobRepository.findById(reviewTask.ingestJobId).orElse(null)
         if (ingestJob != null && ingestJob.status == IngestJobStatus.NEEDS_REVIEW) {
+            saveResolvedData(
+                ownerId = ownerId,
+                ingestJobId = reviewTask.ingestJobId,
+                kakaoUserKey = ingestJob.kakaoUserKey,
+                payload = correctedPayload,
+            )
             ingestJob.transitionTo(IngestJobStatus.AUTO_SAVED)
         }
 
         return reviewTask
     }
+
+    private fun saveResolvedData(
+        ownerId: UUID,
+        ingestJobId: UUID,
+        kakaoUserKey: String?,
+        payload: Map<String, Any?>,
+    ) {
+        val existingCustomer =
+            kakaoUserKey
+                ?.let { customerRepository.findByOwnerIdAndKakaoUserKey(ownerId, it) }
+
+        val customer =
+            existingCustomer ?: Customer(
+                ownerId = ownerId,
+                name = payload.stringValue("name") ?: "미확인 고객",
+                kakaoUserKey = kakaoUserKey,
+                source = if (kakaoUserKey != null) CustomerSource.KAKAO else CustomerSource.MANUAL,
+            )
+
+        payload.stringValue("name")?.let { customer.name = it }
+        customer.phone = payload.stringValue("phone")
+        customer.email = payload.stringValue("email")
+        customer.projectType = payload.stringValue("projectType")
+        customer.estimatedBudget = payload.stringValue("estimatedBudget")
+        customer.inquirySummary = payload.summaryValue()
+
+        val savedCustomer = customerRepository.save(customer)
+
+        val existingConsultation = consultationRepository.findByIngestJobId(ingestJobId)
+        if (existingConsultation != null) {
+            existingConsultation.summary = payload.summaryValue() ?: existingConsultation.summary
+            existingConsultation.rawText = payload.rawTextValue()
+            return
+        }
+
+        consultationRepository.save(
+            Consultation(
+                ownerId = ownerId,
+                customerId = requireNotNull(savedCustomer.id),
+                ingestJobId = ingestJobId,
+                summary = payload.summaryValue() ?: "검수 완료",
+                rawText = payload.rawTextValue(),
+            ),
+        )
+    }
+
+    private fun Map<String, Any?>.stringValue(key: String): String? = this[key] as? String
+
+    private fun Map<String, Any?>.summaryValue(): String? {
+        val summary = this["inquirySummary"]
+        return when (summary) {
+            is String -> summary
+            is List<*> -> summary.joinToString(" ") { it.toString() }
+            else -> null
+        }
+    }
+
+    private fun Map<String, Any?>.rawTextValue(): String? = this["rawText"] as? String
 }

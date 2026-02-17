@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
 interface CustomerRepository : JpaRepository<Customer, UUID> {
+    fun countByOwnerId(ownerId: UUID): Long
+
     fun findByOwnerIdAndKakaoUserKey(
         ownerId: UUID,
         kakaoUserKey: String,

@@ -7,6 +7,7 @@ import com.soloboss.ai.domain.interaction.ExtractionResult
 import com.soloboss.ai.domain.interaction.IngestJob
 import com.soloboss.ai.domain.interaction.IngestJobStatus
 import com.soloboss.ai.domain.interaction.ReviewTask
+import com.soloboss.ai.domain.interaction.SourceType
 import com.soloboss.ai.infrastructure.persistence.IngestJobRepository
 import com.soloboss.ai.infrastructure.persistence.ReviewTaskRepository
 import jakarta.persistence.EntityNotFoundException
@@ -73,6 +74,7 @@ class OcrExtractionService(
             ingestJob.errorReason = ex.message ?: "OCR 추출 실패"
             ingestJob.transitionTo(IngestJobStatus.FAILED)
             ingestJobRepository.save(ingestJob)
+            sendQualityIssueIfNeeded(command = command, exception = ex)
             ingestJob.toResult()
         }
     }
@@ -157,6 +159,38 @@ class OcrExtractionService(
                     ),
             ),
         )
+    }
+
+    private fun sendQualityIssueIfNeeded(
+        command: OcrExtractCommand,
+        exception: Exception,
+    ) {
+        val to = command.kakaoUserKey ?: return
+        val templateCode = classifyQualityIssue(command.sourceType, exception.message.orEmpty())
+        alimtalkNotifier?.sendSafely(
+            AlimtalkSendCommand(
+                templateCode = templateCode,
+                to = to,
+                variables = emptyMap(),
+            ),
+        )
+    }
+
+    private fun classifyQualityIssue(
+        sourceType: SourceType,
+        message: String,
+    ): AlimtalkTemplateCode {
+        if (sourceType == SourceType.VOICE) {
+            return AlimtalkTemplateCode.OCR_TEXT_ONLY
+        }
+        val lower = message.lowercase()
+        return when {
+            "blur" in lower || "blurry" in lower -> AlimtalkTemplateCode.OCR_IMAGE_BLURRY
+            "exposure" in lower || "bright" in lower || "dark" in lower -> AlimtalkTemplateCode.OCR_IMAGE_EXPOSURE
+            "conversation" in lower || "chat" in lower -> AlimtalkTemplateCode.OCR_NOT_CONVERSATION
+            "multi" in lower || "order" in lower -> AlimtalkTemplateCode.OCR_MULTI_IMAGE_ORDER
+            else -> AlimtalkTemplateCode.OCR_IMAGE_BLURRY
+        }
     }
 
     private fun ExtractionResult.findUncertainFields(): List<String> =

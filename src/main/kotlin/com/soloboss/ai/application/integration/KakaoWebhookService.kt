@@ -27,6 +27,7 @@ class KakaoWebhookService(
 
         val ownerId = channelOwnerResolver.resolveOwnerId(command.channelId)
         val idempotencyKey = "${command.channelId}:${command.messageId}"
+        val sourceType = command.messageType.toSourceTypeOrNotify(command.kakaoUserKey)
 
         alimtalkNotifier?.sendSafely(
             AlimtalkSendCommand(
@@ -46,7 +47,7 @@ class KakaoWebhookService(
             OcrExtractCommand(
                 ownerId = ownerId,
                 idempotencyKey = idempotencyKey,
-                sourceType = command.messageType.toSourceType(),
+                sourceType = sourceType,
                 sourceUrl = command.mediaUrl,
                 eventId = command.eventId,
                 messageId = command.messageId,
@@ -68,11 +69,20 @@ class KakaoWebhookService(
             .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
             .format(TIME_FORMATTER)
 
-    private fun String.toSourceType(): SourceType =
+    private fun String.toSourceTypeOrNotify(kakaoUserKey: String): SourceType =
         when (lowercase()) {
             "image" -> SourceType.IMAGE
             "voice", "audio" -> SourceType.VOICE
-            else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "지원하지 않는 message_type입니다: $this")
+            else -> {
+                alimtalkNotifier?.sendSafely(
+                    AlimtalkSendCommand(
+                        templateCode = AlimtalkTemplateCode.OCR_TEXT_ONLY,
+                        to = kakaoUserKey,
+                        variables = emptyMap(),
+                    ),
+                )
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "지원하지 않는 message_type입니다: $this")
+            }
         }
 
     companion object {
