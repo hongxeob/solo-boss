@@ -1,5 +1,7 @@
 package com.soloboss.ai.application.integration
 
+import com.soloboss.ai.application.integration.duplicate.DuplicatePolicyService
+import com.soloboss.ai.application.integration.duplicate.DuplicateType
 import com.soloboss.ai.application.notification.AlimtalkNotifier
 import com.soloboss.ai.application.notification.AlimtalkSendCommand
 import com.soloboss.ai.application.notification.AlimtalkTemplateCode
@@ -12,7 +14,6 @@ import org.springframework.web.server.ResponseStatusException
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class KakaoWebhookService(
@@ -20,17 +21,21 @@ class KakaoWebhookService(
     private val channelOwnerResolver: ChannelOwnerResolver,
     private val kakaoSignatureVerifier: KakaoSignatureVerifier,
     private val alimtalkNotifier: AlimtalkNotifier? = null,
+    private val duplicatePolicyService: DuplicatePolicyService = DuplicatePolicyService(),
 ) {
     fun handle(command: KakaoWebhookCommand): KakaoWebhookResult {
         if (!kakaoSignatureVerifier.isValid(command.signature, command.eventId, command.messageId, command.channelId)) {
             throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 카카오 시그니처입니다.")
         }
 
+        val now = OffsetDateTime.now()
         val ownerId = channelOwnerResolver.resolveOwnerId(command.channelId)
-        val idempotencyKey = "${command.channelId}:${command.messageId}"
+        val originalIdempotencyKey = "${command.channelId}:${command.messageId}"
+        val duplicateResolution = duplicatePolicyService.resolve(ownerId, command.kakaoUserKey, originalIdempotencyKey, now)
+        val idempotencyKey = duplicateResolution.canonicalIdempotencyKey
         val sourceType = command.messageType.toSourceTypeOrNotify(command.kakaoUserKey)
 
-        if (seenIdempotencyKeys.putIfAbsent(idempotencyKey, OffsetDateTime.now()) != null) {
+        if (duplicateResolution.type != DuplicateType.UNIQUE) {
             alimtalkNotifier?.sendSafely(
                 AlimtalkSendCommand(
                     templateCode = AlimtalkTemplateCode.OCR_MULTI_IMAGE_ORDER,
@@ -40,19 +45,21 @@ class KakaoWebhookService(
             )
         }
 
-        alimtalkNotifier?.sendSafely(
-            AlimtalkSendCommand(
-                templateCode = AlimtalkTemplateCode.RECEIVED_ACK,
-                to = command.kakaoUserKey,
-                variables =
-                    mapOf(
-                        "eta_seconds" to DEFAULT_ETA_SECONDS.toString(),
-                        "source_type" to command.messageType.toSourceTypeLabel(),
-                        "received_at" to formatKst(OffsetDateTime.now()),
-                        "job_status_link" to "${DEFAULT_JOB_STATUS_LINK_PREFIX}$idempotencyKey",
-                    ),
-            ),
-        )
+        if (duplicateResolution.type != DuplicateType.EXACT_DUPLICATE) {
+            alimtalkNotifier?.sendSafely(
+                AlimtalkSendCommand(
+                    templateCode = AlimtalkTemplateCode.RECEIVED_ACK,
+                    to = command.kakaoUserKey,
+                    variables =
+                        mapOf(
+                            "eta_seconds" to DEFAULT_ETA_SECONDS.toString(),
+                            "source_type" to command.messageType.toSourceTypeLabel(),
+                            "received_at" to formatKst(now),
+                            "job_status_link" to "${DEFAULT_JOB_STATUS_LINK_PREFIX}$idempotencyKey",
+                        ),
+                ),
+            )
+        }
 
         return ocrExtractionService.extract(
             OcrExtractCommand(
@@ -100,6 +107,5 @@ class KakaoWebhookService(
         private const val DEFAULT_ETA_SECONDS = 30
         private const val DEFAULT_JOB_STATUS_LINK_PREFIX = "https://soloboss.local/jobs/"
         private val TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-        private val seenIdempotencyKeys = ConcurrentHashMap<String, OffsetDateTime>()
     }
 }

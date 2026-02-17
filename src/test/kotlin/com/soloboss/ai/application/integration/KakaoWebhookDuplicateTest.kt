@@ -98,6 +98,6 @@ class KakaoWebhookDuplicateTest {
         val captor = ArgumentCaptor.forClass(com.soloboss.ai.application.notification.AlimtalkSendCommand::class.java)
         Mockito.verify(notifier, Mockito.atLeast(2)).sendSafely(captor.capture())
         assert(captor.allValues.any { it.templateCode == AlimtalkTemplateCode.OCR_MULTI_IMAGE_ORDER })
-        assertEquals(2, captor.allValues.count { it.templateCode == AlimtalkTemplateCode.RECEIVED_ACK })
+        assertEquals(1, captor.allValues.count { it.templateCode == AlimtalkTemplateCode.RECEIVED_ACK })
     }
 }
