@@ -60,8 +60,8 @@ export const api = {
     return data.map(task => ({
       id: task.id,
       clientName: task.customerName,
-      content: task.proposedMessage,
-      type: task.taskType as any,
+      suggestedMessage: task.proposedMessage,
+      projectType: task.taskType,
     }));
   },
 
@@ -86,7 +86,7 @@ export const api = {
     const res = await fetch(`${API_BASE_URL}/reviews?ownerId=${OWNER_ID}&status=OPEN`);
     if (!res.ok) throw new Error('Failed to fetch reviews');
     const page = (await res.json()) as PageResponse<ReviewResponse>;
-    return page.content.map((item) => {
+    return page.content.map((item): ReviewItem => {
       const primaryField = item.uncertainFields?.[0] ?? '확인 필요';
       const rawValue = item.proposedPayload?.[primaryField];
       return {

@@ -1,7 +1,7 @@
 # SoloBoss AI — 프로젝트 상태 점검
 
 > 최종 업데이트: 2026-02-17
-> 기준 커밋: `7e227b1` feat: add consultation embedding and relationship memory search/summarize
+> 기준 커밋: `eea8116` test: add tests for embedding, consultation, memory search, and controller
 
 ---
 
@@ -31,9 +31,9 @@
 |------|:----:|:------:|---------------|------|
 | 고객 CRUD | ✅ | ✅ | `GET/POST/PATCH/DELETE /api/v1/customers` | CustomerServiceTest |
 | 스크린샷 OCR | ✅ | ✅ | `POST /api/v1/ocr/extract` | OcrExtractionServiceTest 외 3개 |
-| 상담 CRUD | ✅ | ❌ | `GET/POST/PATCH/DELETE /api/v1/consultations` | **전용 테스트 없음** |
-| 상담 임베딩 | ✅ | ❌ | 내부 (CRUD 훅) | **테스트 없음** |
-| 메모리 검색/요약 | ✅ | ❌ | `POST /api/v1/memory/search`, `POST /api/v1/memory/summarize` | **테스트 없음** |
+| 상담 CRUD | ✅ | ✅ | `GET/POST/PATCH/DELETE /api/v1/consultations` | ConsultationServiceTest (8개) |
+| 상담 임베딩 | ✅ | ✅ | 내부 (CRUD 훅) | ConsultationEmbeddingServiceTest (6개) |
+| 메모리 검색/요약 | ✅ | ✅ | `POST /api/v1/memory/search`, `POST /api/v1/memory/summarize` | RelationshipMemoryServiceTest (7개) + MemoryControllerTest (4개) |
 | 리뷰 워크플로우 | ✅ | ✅ | `GET/PATCH /api/v1/reviews` | ReviewServiceTest |
 | 팔로업 태스크 | ✅ | ✅ | `GET/POST/PATCH /api/v1/tasks` | FollowUpTaskServiceTest |
 | 카카오 웹훅 | ✅ | ✅ | `POST /api/webhook/kakao` | 3개 테스트 |
@@ -79,7 +79,7 @@
 | Infrastructure (AI/DB/외부) | 11 | Spring AI, JPA, Kakao |
 | Web (컨트롤러/DTO) | 12 | REST API + Webhook |
 | **백엔드 소스 합계** | **51** | `src/main/kotlin` |
-| 테스트 | 13 | `src/test/kotlin` |
+| 테스트 | 17 | `src/test/kotlin` |
 | Flyway 마이그레이션 | 6 | V1 ~ V6 |
 | 프롬프트 템플릿 | 1 | `.st` 파일 |
 | 프론트엔드 | 21 | Next.js 14 (pages, components, types, api) |
@@ -89,33 +89,33 @@
 
 ## 5. 테스트 커버리지
 
-### 테스트 있는 영역 (10개)
+### 테스트 있는 영역 (17개)
 
-| 테스트 파일 | 대상 |
-|------------|------|
-| `CustomerServiceTest` | 고객 CRUD |
-| `OcrExtractionServiceTest` | OCR 핵심 로직 |
-| `OcrExtractionServiceReviewTaskTest` | OCR → 리뷰 태스크 워크플로우 |
-| `OcrQualityNotificationTest` | OCR 품질 알림 |
-| `ReviewServiceTest` | 리뷰 상태 머신 |
-| `FollowUpTaskServiceTest` | 팔로업 태스크 관리 |
-| `KakaoWebhookServiceTest` | 카카오 웹훅 처리 |
-| `KakaoWebhookDuplicateTest` | 웹훅 중복 감지 |
-| `KakaoWebhookQualityTest` | 웹훅 품질 검증 |
-| `DuplicatePolicyServiceTest` | 중복 병합 정책 |
-| `AlimtalkServiceTest` | 알림톡 스케줄링 |
-| `StatsServiceTest` | 통계 집계 |
-| `DefaultKakaoSignatureVerifierTest` | 카카오 서명 검증 |
+| 테스트 파일 | 대상 | 케이스 수 |
+|------------|------|:--------:|
+| `CustomerServiceTest` | 고객 CRUD | 3 |
+| `OcrExtractionServiceTest` | OCR 핵심 로직 | - |
+| `OcrExtractionServiceReviewTaskTest` | OCR → 리뷰 태스크 워크플로우 | - |
+| `OcrQualityNotificationTest` | OCR 품질 알림 | - |
+| `ReviewServiceTest` | 리뷰 상태 머신 | - |
+| `FollowUpTaskServiceTest` | 팔로업 태스크 관리 | - |
+| `KakaoWebhookServiceTest` | 카카오 웹훅 처리 | - |
+| `KakaoWebhookDuplicateTest` | 웹훅 중복 감지 | - |
+| `KakaoWebhookQualityTest` | 웹훅 품질 검증 | - |
+| `DuplicatePolicyServiceTest` | 중복 병합 정책 | - |
+| `AlimtalkServiceTest` | 알림톡 스케줄링 | - |
+| `StatsServiceTest` | 통계 집계 | - |
+| `DefaultKakaoSignatureVerifierTest` | 카카오 서명 검증 | - |
+| `ConsultationServiceTest` | 상담 CRUD + 임베딩 훅 + 실패 안전 동작 | 8 |
+| `ConsultationEmbeddingServiceTest` | VectorStore embed/remove, 텍스트 조합/자르기 | 6 |
+| `RelationshipMemoryServiceTest` | 시맨틱 검색 + AI 요약 + 에러 핸들링 | 7 |
+| `MemoryControllerTest` | memory search/summarize API | 4 |
 
 ### 테스트 없는 영역 (갭)
 
 | 영역 | 우선순위 | 이유 |
 |------|:--------:|------|
-| `ConsultationService` (CRUD + 임베딩 훅) | **높음** | 핵심 비즈니스 로직, 임베딩 실패 시 안전 동작 검증 필요 |
-| `ConsultationEmbeddingService` | **높음** | VectorStore 연동, 텍스트 조합/자르기 로직 검증 |
-| `RelationshipMemoryService` | **높음** | 시맨틱 검색 + AI 요약, 빈 결과 핸들링 검증 |
-| `MemoryController` | 보통 | API 레이어, 입력 검증 |
-| `ConsultationController` | 보통 | API 레이어 |
+| `ConsultationController` | 낮음 | 얇은 API 레이어, 서비스 테스트에서 간접 커버 |
 
 ---
 

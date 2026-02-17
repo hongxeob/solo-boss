@@ -1,0 +1,346 @@
+openapi: 3.1.0
+info:
+  title: SoloBoss AI Weekly Coaching Report API
+  version: 1.0.0
+  description: >
+    Weekly coaching report orchestration APIs for Monday 08:30 KST delivery.
+servers:
+  - url: https://api.soloboss.ai
+    description: Production
+  - url: http://localhost:8080
+    description: Local
+tags:
+  - name: WeeklyReports
+    description: Weekly coaching report orchestration
+
+paths:
+  /api/v1/reports/weekly/run:
+    post:
+      tags: [WeeklyReports]
+      summary: Run weekly coaching report batch
+      operationId: runWeeklyReportBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyRunRequest'
+      responses:
+        '202':
+          description: Batch accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyRunAcceptedResponse'
+
+  /api/v1/reports/weekly/metrics:
+    post:
+      tags: [WeeklyReports]
+      summary: Calculate weekly metrics per owner
+      operationId: calculateWeeklyMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyMetricsRequest'
+      responses:
+        '200':
+          description: Metrics calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyMetricsResponse'
+
+  /api/v1/reports/weekly/priorities:
+    post:
+      tags: [WeeklyReports]
+      summary: Rank top follow-up targets
+      operationId: rankWeeklyPriorityTargets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyPrioritiesRequest'
+      responses:
+        '200':
+          description: Priorities calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyPrioritiesResponse'
+
+  /api/v1/reports/weekly/render:
+    post:
+      tags: [WeeklyReports]
+      summary: Render coach-style report payload
+      operationId: renderWeeklyReportMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyRenderRequest'
+      responses:
+        '200':
+          description: Rendered message payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyRenderResponse'
+
+  /api/v1/reports/weekly/archive:
+    post:
+      tags: [WeeklyReports]
+      summary: Persist report snapshot for web console
+      operationId: archiveWeeklyReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyArchiveRequest'
+      responses:
+        '201':
+          description: Archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyArchiveResponse'
+
+  /api/v1/reports/weekly/jobs/{jobId}/status:
+    patch:
+      tags: [WeeklyReports]
+      summary: Update weekly report job status
+      operationId: updateWeeklyJobStatus
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyJobStatusPatchRequest'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyJobStatusPatchResponse'
+
+components:
+  schemas:
+    WeeklyRunRequest:
+      type: object
+      required: [run_at, timezone, force_rerun]
+      properties:
+        run_at:
+          type: string
+          format: date-time
+          example: '2026-02-23T08:30:00+09:00'
+        timezone:
+          type: string
+          example: 'Asia/Seoul'
+        target_owner_ids:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Omit or null for all ACTIVE owners
+        force_rerun:
+          type: boolean
+          default: false
+    WeeklyRunAcceptedResponse:
+      type: object
+      required: [batch_job_id, accepted_count, idempotency_group]
+      properties:
+        batch_job_id:
+          type: string
+        accepted_count:
+          type: integer
+          minimum: 0
+        idempotency_group:
+          type: string
+          example: 'weekly_report:2026-W09'
+
+    WeeklyMetricsRequest:
+      type: object
+      required: [owner_id, period]
+      properties:
+        owner_id:
+          type: string
+        period:
+          $ref: '#/components/schemas/DateTimePeriod'
+    DateTimePeriod:
+      type: object
+      required: [from, to]
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+    WeeklyMetricsResponse:
+      type: object
+      required:
+        - consultation_count
+        - expected_revenue
+        - expected_revenue_delta_value
+        - expected_revenue_delta_rate
+      properties:
+        consultation_count:
+          type: integer
+          minimum: 0
+        expected_revenue:
+          type: integer
+          minimum: 0
+          description: KRW
+        expected_revenue_delta_value:
+          type: integer
+          description: KRW, vs previous week
+        expected_revenue_delta_rate:
+          type: number
+          format: double
+          description: e.g. 0.18 means +18%
+
+    WeeklyPrioritiesRequest:
+      type: object
+      required: [owner_id, as_of, max_items]
+      properties:
+        owner_id:
+          type: string
+        as_of:
+          type: string
+          format: date-time
+        max_items:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+    WeeklyPrioritiesResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriorityItem'
+    PriorityItem:
+      type: object
+      required:
+        - customer_id
+        - customer_masked_name
+        - reason
+        - win_probability
+        - is_estimated
+        - priority_score
+      properties:
+        customer_id:
+          type: string
+        customer_masked_name:
+          type: string
+          example: '박OO'
+        reason:
+          type: string
+        win_probability:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        is_estimated:
+          type: boolean
+        priority_score:
+          type: number
+          format: double
+
+    WeeklyRenderRequest:
+      type: object
+      required: [owner_id, voice_profile, metrics, priority_items]
+      properties:
+        owner_id:
+          type: string
+        voice_profile:
+          type: string
+          enum: [COACH]
+        metrics:
+          $ref: '#/components/schemas/WeeklyMetricsResponse'
+        priority_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriorityItem'
+    WeeklyRenderResponse:
+      type: object
+      required: [template_code, variables, message_preview]
+      properties:
+        template_code:
+          type: string
+          enum: [WEEKLY_COACHING_REPORT]
+        variables:
+          type: object
+          additionalProperties: true
+        message_preview:
+          type: string
+
+    WeeklyArchiveRequest:
+      type: object
+      required: [owner_id, iso_week, report_payload]
+      properties:
+        owner_id:
+          type: string
+        iso_week:
+          type: string
+          example: '2026-W09'
+        report_payload:
+          type: object
+          additionalProperties: true
+    WeeklyArchiveResponse:
+      type: object
+      required: [report_id, archived_at]
+      properties:
+        report_id:
+          type: string
+        archived_at:
+          type: string
+          format: date-time
+
+    WeeklyJobStatusPatchRequest:
+      type: object
+      required: [status, processed_at]
+      properties:
+        status:
+          type: string
+          enum:
+            - SCHEDULED
+            - CALCULATING
+            - RENDERED
+            - SENT
+            - ARCHIVED
+            - FAILED_METRICS
+            - FAILED_SEND
+            - RETRYING
+            - FAILED_FINAL
+        attempt:
+          type: integer
+          minimum: 0
+        error_reason:
+          type: string
+          nullable: true
+        processed_at:
+          type: string
+          format: date-time
+    WeeklyJobStatusPatchResponse:
+      type: object
+      required: [job_id, status]
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+

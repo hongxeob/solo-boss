@@ -15,8 +15,16 @@
   - 접수 확인, 처리 완료(자동/검수), 팔로업 리마인드 템플릿 카피
 - `api/kakao-ingestion-events.md`
   - 카카오 Webhook부터 최종 저장까지 API 호출 순서와 요청 파라미터
+- `api/weekly-coaching-report-events.md`
+  - 월요일 주간 코칭 리포트 스케줄러/이벤트/API 명세
+- `api/openapi-weekly-coaching-report.yaml`
+  - 주간 코칭 리포트 OpenAPI 3.1 계약 초안
+- `api/backend-ai-prompt-weekly-report.md`
+  - 백엔드 AI 구현 요청용 프롬프트 템플릿
 - `diagrams/state-transitions.md`
   - `ingest_job`, `review_task`, `follow_up_task` 상태 전이 다이어그램
+- `retention-weekly-report-and-persona.md`
+  - 리텐션 전략, 월요일 주간 리포트 설계, 에러 페르소나 보이스/톤 가이드
 
 ## Product Constants (v1)
 
