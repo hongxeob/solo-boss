@@ -6,5 +6,5 @@ enum class SourceType {
     IMAGE,
 
     /** 음성 메시지 */
-    VOICE
+    VOICE,
 }

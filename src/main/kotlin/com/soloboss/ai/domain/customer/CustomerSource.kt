@@ -9,5 +9,5 @@ enum class CustomerSource {
     MANUAL,
 
     /** 외부 데이터 일괄 가져오기 */
-    IMPORT
+    IMPORT,
 }

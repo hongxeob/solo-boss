@@ -33,11 +33,12 @@ enum class IngestJobStatus {
     FAILED,
 
     /** 검토 미완료로 만료됨 */
-    EXPIRED;
+    EXPIRED,
+
+    ;
 
     /** 현재 상태에서 [target]으로 전이 가능한지 확인 */
-    fun canTransitionTo(target: IngestJobStatus): Boolean =
-        target in allowedTransitions()
+    fun canTransitionTo(target: IngestJobStatus): Boolean = target in allowedTransitions()
 
     /** 현재 상태에서 [target]으로 전이. 불가능하면 예외 발생 */
     fun transitionTo(target: IngestJobStatus): IngestJobStatus {
@@ -47,11 +48,12 @@ enum class IngestJobStatus {
         return target
     }
 
-    private fun allowedTransitions(): Set<IngestJobStatus> = when (this) {
-        RECEIVED -> setOf(OCR_DONE, FAILED)
-        OCR_DONE -> setOf(STRUCTURED, FAILED)
-        STRUCTURED -> setOf(AUTO_SAVED, NEEDS_REVIEW, FAILED)
-        NEEDS_REVIEW -> setOf(EXPIRED)
-        AUTO_SAVED, FAILED, EXPIRED -> emptySet()
-    }
+    private fun allowedTransitions(): Set<IngestJobStatus> =
+        when (this) {
+            RECEIVED -> setOf(OCR_DONE, FAILED)
+            OCR_DONE -> setOf(STRUCTURED, FAILED)
+            STRUCTURED -> setOf(AUTO_SAVED, NEEDS_REVIEW, FAILED)
+            NEEDS_REVIEW -> setOf(EXPIRED)
+            AUTO_SAVED, FAILED, EXPIRED -> emptySet()
+        }
 }

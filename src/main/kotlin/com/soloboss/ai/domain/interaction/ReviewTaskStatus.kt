@@ -22,10 +22,11 @@ enum class ReviewTaskStatus {
     RESOLVED,
 
     /** 검토 기한 만료 */
-    EXPIRED;
+    EXPIRED,
 
-    fun canTransitionTo(target: ReviewTaskStatus): Boolean =
-        target in allowedTransitions()
+    ;
+
+    fun canTransitionTo(target: ReviewTaskStatus): Boolean = target in allowedTransitions()
 
     fun transitionTo(target: ReviewTaskStatus): ReviewTaskStatus {
         require(canTransitionTo(target)) {
@@ -34,9 +35,10 @@ enum class ReviewTaskStatus {
         return target
     }
 
-    private fun allowedTransitions(): Set<ReviewTaskStatus> = when (this) {
-        OPEN -> setOf(IN_PROGRESS, EXPIRED)
-        IN_PROGRESS -> setOf(RESOLVED, OPEN, EXPIRED)
-        RESOLVED, EXPIRED -> emptySet()
-    }
+    private fun allowedTransitions(): Set<ReviewTaskStatus> =
+        when (this) {
+            OPEN -> setOf(IN_PROGRESS, EXPIRED)
+            IN_PROGRESS -> setOf(RESOLVED, OPEN, EXPIRED)
+            RESOLVED, EXPIRED -> emptySet()
+        }
 }

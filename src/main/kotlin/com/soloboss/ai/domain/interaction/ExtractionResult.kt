@@ -6,13 +6,13 @@ package com.soloboss.ai.domain.interaction
  */
 data class ConfidenceField<T>(
     val value: T?,
-    val confidence: Double
+    val confidence: Double,
 )
 
 /** 요약 텍스트(여러 줄)와 신뢰도 */
 data class SummaryField(
     val lines: List<String>,
-    val confidence: Double
+    val confidence: Double,
 )
 
 /**
@@ -28,5 +28,5 @@ data class ExtractionResult(
     val projectType: ConfidenceField<String> = ConfidenceField(null, 0.0),
     val estimatedBudget: ConfidenceField<String> = ConfidenceField(null, 0.0),
     val inquirySummary: SummaryField = SummaryField(emptyList(), 0.0),
-    val overallConfidence: Double = 0.0
+    val overallConfidence: Double = 0.0,
 )

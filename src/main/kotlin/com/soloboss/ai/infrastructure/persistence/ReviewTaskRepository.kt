@@ -9,10 +9,16 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 interface ReviewTaskRepository : JpaRepository<ReviewTask, UUID> {
-
-    fun findByOwnerIdAndStatus(ownerId: UUID, status: ReviewTaskStatus, pageable: Pageable): Page<ReviewTask>
+    fun findByOwnerIdAndStatus(
+        ownerId: UUID,
+        status: ReviewTaskStatus,
+        pageable: Pageable,
+    ): Page<ReviewTask>
 
     fun findByIngestJobId(ingestJobId: UUID): ReviewTask?
 
-    fun findByStatusAndExpiresAtBefore(status: ReviewTaskStatus, expiresAt: OffsetDateTime): List<ReviewTask>
+    fun findByStatusAndExpiresAtBefore(
+        status: ReviewTaskStatus,
+        expiresAt: OffsetDateTime,
+    ): List<ReviewTask>
 }

@@ -9,10 +9,19 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 interface FollowUpTaskRepository : JpaRepository<FollowUpTask, UUID> {
+    fun findByOwnerIdAndStatus(
+        ownerId: UUID,
+        status: FollowUpTaskStatus,
+        pageable: Pageable,
+    ): Page<FollowUpTask>
 
-    fun findByOwnerIdAndStatus(ownerId: UUID, status: FollowUpTaskStatus, pageable: Pageable): Page<FollowUpTask>
+    fun findByCustomerId(
+        customerId: UUID,
+        pageable: Pageable,
+    ): Page<FollowUpTask>
 
-    fun findByCustomerId(customerId: UUID, pageable: Pageable): Page<FollowUpTask>
-
-    fun findByStatusAndScheduledAtBefore(status: FollowUpTaskStatus, scheduledAt: OffsetDateTime): List<FollowUpTask>
+    fun findByStatusAndScheduledAtBefore(
+        status: FollowUpTaskStatus,
+        scheduledAt: OffsetDateTime,
+    ): List<FollowUpTask>
 }

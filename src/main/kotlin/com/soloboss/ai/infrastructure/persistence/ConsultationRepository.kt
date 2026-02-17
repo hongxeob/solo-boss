@@ -7,10 +7,16 @@ import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
 interface ConsultationRepository : JpaRepository<Consultation, UUID> {
+    fun findByCustomerId(
+        customerId: UUID,
+        pageable: Pageable,
+    ): Page<Consultation>
 
-    fun findByCustomerId(customerId: UUID, pageable: Pageable): Page<Consultation>
-
-    fun findByOwnerIdAndCustomerId(ownerId: UUID, customerId: UUID, pageable: Pageable): Page<Consultation>
+    fun findByOwnerIdAndCustomerId(
+        ownerId: UUID,
+        customerId: UUID,
+        pageable: Pageable,
+    ): Page<Consultation>
 
     fun findByIngestJobId(ingestJobId: UUID): Consultation?
 }

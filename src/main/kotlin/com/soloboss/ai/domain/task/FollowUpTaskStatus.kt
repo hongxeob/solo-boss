@@ -31,10 +31,11 @@ enum class FollowUpTaskStatus {
     SNOOZED,
 
     /** 취소됨 */
-    CANCELED;
+    CANCELED,
 
-    fun canTransitionTo(target: FollowUpTaskStatus): Boolean =
-        target in allowedTransitions()
+    ;
+
+    fun canTransitionTo(target: FollowUpTaskStatus): Boolean = target in allowedTransitions()
 
     fun transitionTo(target: FollowUpTaskStatus): FollowUpTaskStatus {
         require(canTransitionTo(target)) {
@@ -43,11 +44,12 @@ enum class FollowUpTaskStatus {
         return target
     }
 
-    private fun allowedTransitions(): Set<FollowUpTaskStatus> = when (this) {
-        SCHEDULED -> setOf(DRAFT_READY, CANCELED)
-        DRAFT_READY -> setOf(SENT, EDITING, SNOOZED, CANCELED)
-        EDITING -> setOf(SENT, CANCELED)
-        SNOOZED -> setOf(DRAFT_READY, CANCELED)
-        SENT, CANCELED -> emptySet()
-    }
+    private fun allowedTransitions(): Set<FollowUpTaskStatus> =
+        when (this) {
+            SCHEDULED -> setOf(DRAFT_READY, CANCELED)
+            DRAFT_READY -> setOf(SENT, EDITING, SNOOZED, CANCELED)
+            EDITING -> setOf(SENT, CANCELED)
+            SNOOZED -> setOf(DRAFT_READY, CANCELED)
+            SENT, CANCELED -> emptySet()
+        }
 }

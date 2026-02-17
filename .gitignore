@@ -24,6 +24,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Node
+node_modules/
+
 # Logs
 *.log
 spring.log
