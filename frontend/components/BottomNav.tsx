@@ -11,7 +11,8 @@ export default function BottomNav({ activeTab, onTabChange }: Props) {
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: 'today', label: '오늘', icon: '⚡' },
     { id: 'review', label: '검수함', icon: '🔍' },
-    { id: 'clients', label: '고객', icon: '👤' }
+    { id: 'clients', label: '고객', icon: '👤' },
+    { id: 'stats', label: '리포트', icon: '📊' }
   ];
 
   return (

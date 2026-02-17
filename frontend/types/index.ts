@@ -1,16 +1,29 @@
-export type TabType = 'today' | 'review' | 'clients';
+export type TabType = 'today' | 'review' | 'clients' | 'stats';
 
-export interface MessageDraft {
-  id: string;
-  clientName: string;
-  projectType: string;
-  suggestedMessage: string;
+export interface ClientDetail extends ClientItem {
+  email: string;
+  phone: string;
+  totalRevenue: number;
+  projectHistory: {
+    id: string;
+    title: string;
+    date: string;
+    status: string;
+    amount: number;
+  }[];
 }
 
-export interface ReviewItem {
+export interface ClientItem {
   id: string;
-  clientName: string;
-  fieldName: string;
-  value: string;
-  confidence: number;
+  name: string;
+  company: string;
+  tags: string[];
+}
+
+export interface StatsData {
+  monthlyRevenue: number;
+  projectCount: number;
+  aiAccuracy: number;
+  timeSaved: number;
+  revenueByMonth: { month: string; amount: number }[];
 }

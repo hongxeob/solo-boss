@@ -15,23 +15,23 @@
 - `OCR_EXTRACTION_GUIDE.md`: Gemini Multimodal을 활용한 일반 OCR 추출 가이드.
 - `FREELANCER_NOTE_EXTRACTION.md`: **핵심 로직**. 각 추출 필드(고객명, 예산, 기한 등)에 대해 0.0~1.0 사이의 `confidence`(신뢰도) 점수를 반환하도록 설계된 프롬프트 전략.
 
-### 3.2 프론트엔드 프로토타입 (`/frontend/`)
-- **3탭 구조 구현**:
-  1. **오늘 할 일 (`TodayTasks`)**: AI가 생성한 메시지 초안 확인 및 즉시 전송.
-  2. **검수함 (`ReviewBox`)**: 신뢰도가 낮은 데이터를 시각화(Red/Amber)하여 사용자가 수정할 수 있게 함.
-  3. **고객 리스트 (`ClientList`)**: 관리 중인 고객 목록 조회.
-- **환경 설정**: 인텔리제이 개발 환경을 위한 `package.json`, `tsconfig.json` 구성 완료.
+### 3.2 프론트엔드 프로토타입 및 연동 (`/frontend/`)
+- **4탭 구조 확장**: 
+  1. **오늘 할 일 (`TodayTasks`)**: API 연동을 통해 AI 초안 확인 및 즉시 전송 로직 구현.
+  2. **검수함 (`ReviewBox`)**: 신뢰도 50% 미만 항목 붉은색 강조 UI, 인라인 수정 모드 및 `resolve` API 연동 완료.
+  3. **고객 리스트 (`ClientList` & `ClientDetailView`)**: 리스트 조회 및 상세 정보(매출 히스토리, 연락처 등) 보기 기능 추가.
+  4. **리포트 (`Statistics`)**: 월별 수익 추이 및 AI 효율(절약 시간, 정확도) 시각화 대시보드 구현.
+- **API 레이어 (`lib/api.ts`)**: `/api/v1` 규격에 맞춘 중앙 집중형 API 서비스 구축 및 Next.js API Routes를 이용한 Mock 서버 구성 완료.
 
 ## 4. 다음 세션 권장 작업 (Next Steps)
 
-1. **Frontend 의존성 설치 및 실행**:
-   - `cd frontend && npm install` 실행.
-   - `npm run dev`로 실제 화면 구동 및 UI 디테일 조정.
-2. **Spring AI 백엔드 실제 구현**:
-   - `docs/ai-spec`에 정의된 규격을 바탕으로 실제 Spring Boot 프로젝트 생성 및 Gemini API 연동.
-   - `BeanOutputConverter`를 사용해 `ConsultationExtraction` 레코드 형태로 데이터 파싱 구현.
-3. **이미지 업로드 기능**:
-   - 프론트엔드에서 상담 메모 사진을 찍어 백엔드로 전송하는 API 연결.
+1. **Spring AI 백엔드 실구현**:
+   - `docs/ai-spec` 규격에 맞춰 `/api/v1/reviews` 및 `/api/v1/tasks` 엔드포인트 실제 구현.
+   - `BeanOutputConverter`를 사용하여 이미지에서 신뢰도 점수가 포함된 JSON 파싱.
+2. **상세 페이지 라우팅 고도화**:
+   - 현재 `page.tsx` 내 상태값으로 관리되는 상세 보기를 Next.js Dynamic Routes(`[id]/page.tsx`)로 전환 검토.
+3. **이미지 업로드 Flow**:
+   - 카메라/갤러리 접근 후 이미지를 백엔드로 전송하고 결과를 받는 전체 파이프라인 연결.
 
 ## 5. 핵심 결정 사항 (Context)
 - **왜 다크 모드인가?**: 전문직 프리랜서의 세련된 이미지와 몰입감 있는 작업 환경을 위해 다크 테마를 기본으로 채택함.

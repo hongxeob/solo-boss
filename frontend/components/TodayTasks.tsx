@@ -1,26 +1,35 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { MessageDraft } from '../types';
-
-const MOCK_MESSAGES: MessageDraft[] = [
-  {
-    id: '1',
-    clientName: '김철수 대표님',
-    projectType: '로고 디자인',
-    suggestedMessage: '안녕하세요 김철수 대표님, 지난 상담 때 말씀하신 로고 리뉴얼 관련하여 초안이 준비되었습니다. 편하실 때 확인 부탁드립니다!'
-  },
-  {
-    id: '2',
-    clientName: '이영희 실장님',
-    projectType: '번역 프로젝트',
-    suggestedMessage: '실장님 안녕하세요, 법률 자문 번역 건 마감 기한을 5월 30일로 확정 지으려 하는데 괜찮으실까요?'
-  }
-];
+import { api } from '../lib/api';
 
 export default function TodayTasks() {
+  const [tasks, setTasks] = useState<MessageDraft[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getTodayTasks()
+      .then(setTasks)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSend = async (id: string) => {
+    try {
+      await api.sendMessage(id);
+      alert('메시지가 전송되었습니다.');
+      setTasks(tasks.filter(t => t.id !== id));
+    } catch (err) {
+      alert('전송 실패');
+    }
+  };
+
+  if (loading) return <div className="text-center py-10 text-slate-500">불러오는 중...</div>;
+
   return (
     <div className="space-y-4">
-      {MOCK_MESSAGES.map((msg) => (
+      {tasks.length === 0 && <div className="text-center py-10 text-slate-500">오늘 할 일이 없습니다.</div>}
+      {tasks.map((msg) => (
         <div key={msg.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
           <div className="flex justify-between items-start">
             <div>
@@ -35,7 +44,12 @@ export default function TodayTasks() {
           </p>
 
           <div className="grid grid-cols-3 gap-2">
-            <button className="bg-indigo-600 text-white py-3 rounded-xl font-medium text-sm hover:bg-indigo-500 transition-colors">바로 전송</button>
+            <button 
+              onClick={() => handleSend(msg.id)}
+              className="bg-indigo-600 text-white py-3 rounded-xl font-medium text-sm hover:bg-indigo-500 transition-colors"
+            >
+              바로 전송
+            </button>
             <button className="bg-slate-800 text-slate-200 py-3 rounded-xl font-medium text-sm hover:bg-slate-700">수정</button>
             <button className="bg-transparent text-slate-500 py-3 rounded-xl font-medium text-sm hover:text-slate-300">미루기</button>
           </div>
