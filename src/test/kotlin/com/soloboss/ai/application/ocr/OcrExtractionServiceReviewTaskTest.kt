@@ -1,5 +1,7 @@
 package com.soloboss.ai.application.ocr
 
+import com.soloboss.ai.application.notification.AlimtalkNotifier
+import com.soloboss.ai.application.notification.AlimtalkTemplateCode
 import com.soloboss.ai.domain.interaction.ConfidenceField
 import com.soloboss.ai.domain.interaction.ExtractionResult
 import com.soloboss.ai.domain.interaction.IngestJob
@@ -21,7 +23,8 @@ class OcrExtractionServiceReviewTaskTest {
     private val ingestJobRepository = Mockito.mock(IngestJobRepository::class.java)
     private val reviewTaskRepository = Mockito.mock(ReviewTaskRepository::class.java)
     private val extractor = Mockito.mock(OcrExtractor::class.java)
-    private val service = OcrExtractionService(ingestJobRepository, extractor, reviewTaskRepository)
+    private val alimtalkNotifier = Mockito.mock(AlimtalkNotifier::class.java)
+    private val service = OcrExtractionService(ingestJobRepository, extractor, reviewTaskRepository, alimtalkNotifier)
 
     @Test
     fun `creates review task for low confidence fields`() {
@@ -33,6 +36,7 @@ class OcrExtractionServiceReviewTaskTest {
                 idempotencyKey = "ch:msg",
                 sourceType = SourceType.IMAGE,
                 sourceUrl = "https://example.com/kakao.png",
+                kakaoUserKey = "kakao_1",
             )
         Mockito.`when`(ingestJobRepository.findByIdempotencyKey(command.idempotencyKey)).thenReturn(null)
         Mockito.`when`(ingestJobRepository.save(any(IngestJob::class.java))).thenAnswer {
@@ -83,6 +87,9 @@ class OcrExtractionServiceReviewTaskTest {
         assertEquals(ownerId, captor.value.ownerId)
         assertEquals(listOf("phone", "projectType", "inquirySummary"), captor.value.uncertainFields)
         assertNotNull(captor.value.expiresAt)
+        val notifyCaptor = ArgumentCaptor.forClass(com.soloboss.ai.application.notification.AlimtalkSendCommand::class.java)
+        Mockito.verify(alimtalkNotifier).sendSafely(notifyCaptor.capture())
+        assertEquals(AlimtalkTemplateCode.PROCESS_REVIEW_REQUIRED, notifyCaptor.value.templateCode)
     }
 
     @Test
@@ -94,6 +101,7 @@ class OcrExtractionServiceReviewTaskTest {
                 idempotencyKey = "ch:msg2",
                 sourceType = SourceType.IMAGE,
                 sourceUrl = "https://example.com/high.png",
+                kakaoUserKey = "kakao_2",
             )
         Mockito.`when`(ingestJobRepository.findByIdempotencyKey(command.idempotencyKey)).thenReturn(null)
         Mockito.`when`(ingestJobRepository.save(any(IngestJob::class.java))).thenAnswer { it.arguments[0] as IngestJob }
@@ -108,5 +116,8 @@ class OcrExtractionServiceReviewTaskTest {
 
         assertEquals(IngestJobStatus.AUTO_SAVED, result.status)
         Mockito.verifyNoInteractions(reviewTaskRepository)
+        val notifyCaptor = ArgumentCaptor.forClass(com.soloboss.ai.application.notification.AlimtalkSendCommand::class.java)
+        Mockito.verify(alimtalkNotifier).sendSafely(notifyCaptor.capture())
+        assertEquals(AlimtalkTemplateCode.PROCESS_AUTO_DONE, notifyCaptor.value.templateCode)
     }
 }

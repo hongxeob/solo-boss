@@ -1,5 +1,8 @@
 package com.soloboss.ai.application.ocr
 
+import com.soloboss.ai.application.notification.AlimtalkNotifier
+import com.soloboss.ai.application.notification.AlimtalkSendCommand
+import com.soloboss.ai.application.notification.AlimtalkTemplateCode
 import com.soloboss.ai.domain.interaction.ExtractionResult
 import com.soloboss.ai.domain.interaction.IngestJob
 import com.soloboss.ai.domain.interaction.IngestJobStatus
@@ -18,6 +21,7 @@ class OcrExtractionService(
     private val ingestJobRepository: IngestJobRepository,
     private val ocrExtractor: OcrExtractor,
     private val reviewTaskRepository: ReviewTaskRepository? = null,
+    private val alimtalkNotifier: AlimtalkNotifier? = null,
 ) {
     @Transactional
     fun extract(command: OcrExtractCommand): OcrExtractResult {
@@ -58,7 +62,10 @@ class OcrExtractionService(
             ingestJobRepository.save(workingJob)
 
             if (finalStatus == IngestJobStatus.NEEDS_REVIEW) {
-                createReviewTaskIfNeeded(workingJob)
+                val reviewTask = createReviewTaskIfNeeded(workingJob)
+                sendReviewRequired(workingJob, reviewTask)
+            } else if (finalStatus == IngestJobStatus.AUTO_SAVED) {
+                sendAutoDone(workingJob)
             }
 
             workingJob.toResult()
@@ -84,17 +91,18 @@ class OcrExtractionService(
         return job.toResult()
     }
 
-    private fun createReviewTaskIfNeeded(ingestJob: IngestJob) {
-        val reviewRepository = reviewTaskRepository ?: return
-        val ingestJobId = ingestJob.id ?: return
-        if (reviewRepository.findByIngestJobId(ingestJobId) != null) {
-            return
+    private fun createReviewTaskIfNeeded(ingestJob: IngestJob): ReviewTask? {
+        val reviewRepository = reviewTaskRepository ?: return null
+        val ingestJobId = ingestJob.id ?: return null
+        val existing = reviewRepository.findByIngestJobId(ingestJobId)
+        if (existing != null) {
+            return existing
         }
 
         val extraction = ingestJob.extractionResult
         val uncertainFields = extraction?.findUncertainFields().orEmpty()
 
-        reviewRepository.save(
+        return reviewRepository.save(
             ReviewTask(
                 ownerId = ingestJob.ownerId,
                 ingestJobId = ingestJobId,
@@ -103,6 +111,50 @@ class OcrExtractionService(
                 proposedPayload = extraction?.toProposedPayload(),
                 overallConfidence = ingestJob.overallConfidence,
                 expiresAt = OffsetDateTime.now().plusHours(REVIEW_EXPIRES_HOURS),
+            ),
+        )
+    }
+
+    private fun sendAutoDone(ingestJob: IngestJob) {
+        val to = ingestJob.kakaoUserKey ?: return
+        val extraction = ingestJob.extractionResult ?: return
+        alimtalkNotifier?.sendSafely(
+            AlimtalkSendCommand(
+                templateCode = AlimtalkTemplateCode.PROCESS_AUTO_DONE,
+                to = to,
+                variables =
+                    mapOf(
+                        "customer_name" to (extraction.name.value ?: "미확인 고객"),
+                        "summary_one_line" to extraction.toSummaryOneLine(),
+                        "followup_at" to "미정",
+                        "customer_card_link" to "https://soloboss.local/customers",
+                        "followup_draft_link" to "https://soloboss.local/followups",
+                    ),
+            ),
+        )
+    }
+
+    private fun sendReviewRequired(
+        ingestJob: IngestJob,
+        reviewTask: ReviewTask?,
+    ) {
+        val to = ingestJob.kakaoUserKey ?: return
+        val extraction = ingestJob.extractionResult ?: return
+        val uncertainFields = reviewTask?.uncertainFields.orEmpty()
+        val reviewLink = reviewTask?.id?.let { "https://soloboss.local/reviews/$it" } ?: "https://soloboss.local/reviews"
+
+        alimtalkNotifier?.sendSafely(
+            AlimtalkSendCommand(
+                templateCode = AlimtalkTemplateCode.PROCESS_REVIEW_REQUIRED,
+                to = to,
+                variables =
+                    mapOf(
+                        "review_count" to uncertainFields.size.toString(),
+                        "customer_guess" to (extraction.name.value ?: "미확인"),
+                        "uncertain_fields" to uncertainFields.joinToString(","),
+                        "summary_one_line" to extraction.toSummaryOneLine(),
+                        "review_link" to reviewLink,
+                    ),
             ),
         )
     }
@@ -126,6 +178,8 @@ class OcrExtractionService(
             "estimatedBudget" to estimatedBudget.value,
             "inquirySummary" to inquirySummary.lines,
         )
+
+    private fun ExtractionResult.toSummaryOneLine(): String = inquirySummary.lines.firstOrNull().orEmpty()
 
     private fun IngestJob.toResult(): OcrExtractResult =
         OcrExtractResult(

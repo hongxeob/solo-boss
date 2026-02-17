@@ -1,5 +1,7 @@
 package com.soloboss.ai.application.integration
 
+import com.soloboss.ai.application.notification.AlimtalkNotifier
+import com.soloboss.ai.application.notification.AlimtalkTemplateCode
 import com.soloboss.ai.application.ocr.OcrExtractCommand
 import com.soloboss.ai.application.ocr.OcrExtractResult
 import com.soloboss.ai.application.ocr.OcrExtractionService
@@ -14,7 +16,8 @@ class KakaoWebhookServiceTest {
     private val ocrExtractionService = Mockito.mock(OcrExtractionService::class.java)
     private val ownerResolver = Mockito.mock(ChannelOwnerResolver::class.java)
     private val signatureVerifier = Mockito.mock(KakaoSignatureVerifier::class.java)
-    private val service = KakaoWebhookService(ocrExtractionService, ownerResolver, signatureVerifier)
+    private val alimtalkNotifier = Mockito.mock(AlimtalkNotifier::class.java)
+    private val service = KakaoWebhookService(ocrExtractionService, ownerResolver, signatureVerifier, alimtalkNotifier)
 
     @Test
     fun `handles webhook by triggering extraction with idempotency key`() {
@@ -57,5 +60,8 @@ class KakaoWebhookServiceTest {
 
         assertEquals(IngestJobStatus.AUTO_SAVED, result.status)
         Mockito.verify(ocrExtractionService).extract(expectedCommand)
+        val captor = org.mockito.ArgumentCaptor.forClass(com.soloboss.ai.application.notification.AlimtalkSendCommand::class.java)
+        Mockito.verify(alimtalkNotifier).sendSafely(captor.capture())
+        assertEquals(AlimtalkTemplateCode.RECEIVED_ACK, captor.value.templateCode)
     }
 }
