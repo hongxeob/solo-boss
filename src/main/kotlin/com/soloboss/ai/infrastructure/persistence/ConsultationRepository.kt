@@ -19,4 +19,9 @@ interface ConsultationRepository : JpaRepository<Consultation, UUID> {
     ): Page<Consultation>
 
     fun findByIngestJobId(ingestJobId: UUID): Consultation?
+
+    fun findByOwnerId(
+        ownerId: UUID,
+        pageable: Pageable,
+    ): Page<Consultation>
 }
