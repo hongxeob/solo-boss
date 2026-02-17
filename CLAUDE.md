@@ -122,13 +122,15 @@ SCHEDULED/DRAFT_READY/EDITING/SNOOZED → CANCELED
 
 1. ~~프로젝트 스캐폴딩 + CLAUDE.md~~
 2. ~~전체 도메인 모델 (엔티티, 리포지토리, Flyway V2~V6)~~
-3. Customer CRUD (서비스, 컨트롤러, DTO)
-4. 스크린샷 OCR 추출 (Spring AI multimodal + Claude Vision)
-5. Interaction CRUD (상담 기록)
-6. 상담 임베딩 + 벡터 저장소 설정
-7. 관계 메모리 검색 + 요약
-8. 팔로업 메시지 생성
-9. 배치 생성 및 스케줄링
+3. ~~Customer CRUD (서비스, 컨트롤러, DTO)~~
+4. ~~스크린샷 OCR 추출 (Spring AI multimodal + Claude Vision)~~
+5. ~~Interaction CRUD (상담 기록)~~
+6. ~~상담 임베딩 + 벡터 저장소 설정~~
+7. ~~관계 메모리 검색 + 요약~~
+8. ~~팔로업 메시지 생성~~
+9. ~~배치 생성 및 스케줄링~~
+
+> 전체 상태 점검: [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)
 
 ## 코드 컨벤션
 
