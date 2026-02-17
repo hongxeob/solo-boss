@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ClientDetail } from '../../../types';
 import { api } from '../../../lib/api';
 import { ChevronLeft } from 'lucide-react';
+import ConsultationSection from '../../../components/ConsultationSection';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
@@ -90,6 +91,9 @@ export default function ClientDetailPage() {
             ))}
           </div>
         </section>
+
+        {/* Consultation History Section */}
+        <ConsultationSection customerId={id as string} />
       </div>
     </main>
   );

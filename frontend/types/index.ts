@@ -42,3 +42,31 @@ export interface StatsData {
   timeSaved: number;
   revenueByMonth: { month: string; amount: number }[];
 }
+
+export interface ConsultationDetail {
+  id: string;
+  ownerId: string;
+  customerId: string;
+  ingestJobId: string | null;
+  summary: string;
+  rawText: string | null;
+  consultationDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ConsultationItem = ConsultationDetail;
+
+export interface CreateConsultationRequest {
+  ownerId: string;
+  customerId: string;
+  summary: string;
+  rawText?: string;
+  consultationDate?: string;
+}
+
+export interface UpdateConsultationRequest {
+  summary?: string;
+  rawText?: string;
+  consultationDate?: string;
+}

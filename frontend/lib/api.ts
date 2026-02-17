@@ -1,10 +1,14 @@
-import { ClientDetail, ClientItem, MessageDraft, ReviewItem, StatsData } from '../types';
+import { ClientDetail, ClientItem, MessageDraft, ReviewItem, StatsData, ConsultationDetail, ConsultationItem, CreateConsultationRequest, UpdateConsultationRequest } from '../types';
 
 const API_BASE_URL = 'http://localhost:8082/api/v1';
 const OWNER_ID = '11111111-1111-1111-1111-111111111111';
 
 type PageResponse<T> = {
   content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 };
 
 type ReviewResponse = {
@@ -152,4 +156,50 @@ export const api = {
     }
     return res.json();
   },
+
+  // --- Consultations (상담 이력) ---
+  async getConsultations(customerId?: string): Promise<ConsultationItem[]> {
+    let url = `${API_BASE_URL}/consultations?ownerId=${OWNER_ID}&page=0&size=50`;
+    if (customerId) {
+      url += `&customerId=${customerId}`;
+    }
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch consultations');
+    const page = (await res.json()) as PageResponse<ConsultationDetail>;
+    return page.content || [];
+  },
+
+  async getConsultationDetail(id: string): Promise<ConsultationDetail> {
+    const res = await fetch(`${API_BASE_URL}/consultations/${id}?ownerId=${OWNER_ID}`);
+    if (!res.ok) throw new Error('Failed to fetch consultation detail');
+    return res.json() as Promise<ConsultationDetail>;
+  },
+
+  async createConsultation(data: CreateConsultationRequest): Promise<ConsultationDetail> {
+    const res = await fetch(`${API_BASE_URL}/consultations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, ownerId: OWNER_ID }),
+    });
+    if (!res.ok) throw new Error('Failed to create consultation');
+    return res.json() as Promise<ConsultationDetail>;
+  },
+
+  async updateConsultation(id: string, data: UpdateConsultationRequest): Promise<ConsultationDetail> {
+    const res = await fetch(`${API_BASE_URL}/consultations/${id}?ownerId=${OWNER_ID}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update consultation');
+    return res.json() as Promise<ConsultationDetail>;
+  },
+
+  async deleteConsultation(id: string): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/consultations/${id}?ownerId=${OWNER_ID}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete consultation');
+  },
 };
+
