@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class KakaoWebhookService(
@@ -28,6 +29,16 @@ class KakaoWebhookService(
         val ownerId = channelOwnerResolver.resolveOwnerId(command.channelId)
         val idempotencyKey = "${command.channelId}:${command.messageId}"
         val sourceType = command.messageType.toSourceTypeOrNotify(command.kakaoUserKey)
+
+        if (seenIdempotencyKeys.putIfAbsent(idempotencyKey, OffsetDateTime.now()) != null) {
+            alimtalkNotifier?.sendSafely(
+                AlimtalkSendCommand(
+                    templateCode = AlimtalkTemplateCode.OCR_MULTI_IMAGE_ORDER,
+                    to = command.kakaoUserKey,
+                    variables = emptyMap(),
+                ),
+            )
+        }
 
         alimtalkNotifier?.sendSafely(
             AlimtalkSendCommand(
@@ -89,5 +100,6 @@ class KakaoWebhookService(
         private const val DEFAULT_ETA_SECONDS = 30
         private const val DEFAULT_JOB_STATUS_LINK_PREFIX = "https://soloboss.local/jobs/"
         private val TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        private val seenIdempotencyKeys = ConcurrentHashMap<String, OffsetDateTime>()
     }
 }
