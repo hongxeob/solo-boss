@@ -169,3 +169,26 @@
   - 카카오 시그니처 실패 시 `401 Unauthorized`
 - 시간 처리:
   - 저장 `UTC`, 사용자 노출 `Asia/Seoul`
+
+## Notification Template Mapping (Status/Error -> Template)
+
+| Category | Internal Status/Error Code | Template Code | Trigger Point | Required Variables (example) |
+|---|---|---|---|---|
+| 접수 확인 | `RECEIVED` | `RECEIVED_ACK` | `ingest_job` 생성 직후 | `eta_seconds`, `source_type`, `received_at`, `job_status_link` |
+| 처리 완료(자동) | `AUTO_SAVED` | `PROCESS_AUTO_DONE` | 자동 저장 성공 직후 | `customer_name`, `summary_one_line`, `followup_at`, `customer_card_link` |
+| 처리 완료(검수 필요) | `NEEDS_REVIEW` | `PROCESS_REVIEW_REQUIRED` | review task 생성 직후 | `review_count`, `customer_guess`, `uncertain_fields`, `review_link` |
+| 팔로업 리마인드 | `FOLLOW_UP_DUE` | `FOLLOWUP_REMINDER` | 팔로업 스케줄 도달 시점 | `customer_name`, `followup_objective`, `recommended_send_at`, `draft_message` |
+| 입력 오류(텍스트만) | `ERR_TEXT_ONLY` | `OCR_TEXT_ONLY` | webhook 파싱 후 미디어 없음 | `received_at` |
+| 입력 오류(흐린 이미지) | `ERR_IMAGE_BLURRY` | `OCR_IMAGE_BLURRY` | OCR 품질 점수 임계 미달 | `quality_score`, `retry_hint` |
+| 입력 오류(노출 불량) | `ERR_IMAGE_EXPOSURE` | `OCR_IMAGE_EXPOSURE` | OCR 전처리 노출 실패 | `retry_hint` |
+| 입력 오류(상담 아님) | `ERR_NOT_CONVERSATION` | `OCR_NOT_CONVERSATION` | 콘텐츠 분류 결과 대화 아님 | `source_type` |
+| 입력 오류(다중 순서 불명확) | `ERR_MULTI_IMAGE_ORDER` | `OCR_MULTI_IMAGE_ORDER` | 다중 파일 문맥 결합 실패 | `image_count`, `retry_hint` |
+| 중복 입력 감지(병합) | `DUPLICATE_MERGED` | `DUPLICATE_MERGED_NOTICE` | 멱등/준중복 병합 직후 | `customer_name`, `merged_at`, `undo_link` |
+
+## Error/Duplicate Branch Notes
+
+- `ERR_*` 계열은 `AUTO_SAVED/NEEDS_REVIEW` 분기 이전에 종료될 수 있다.
+- `DUPLICATE_MERGED`는 새 레코드를 만들지 않고 기존 레코드에 병합한 성공 케이스다.
+- `DUPLICATE_MERGED_NOTICE`는 1회 발송 원칙을 적용한다(동일 `idempotency_key` 재발송 금지).
+- 템플릿 원문 카피 기준:
+  - `/Users/mediquitous/Desktop/project/solo-boss/docs/ux-research/notifications/alimtalk-templates.md`

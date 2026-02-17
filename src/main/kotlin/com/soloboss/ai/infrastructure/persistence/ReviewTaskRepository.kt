@@ -9,6 +9,11 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 interface ReviewTaskRepository : JpaRepository<ReviewTask, UUID> {
+    fun findByOwnerId(
+        ownerId: UUID,
+        pageable: Pageable,
+    ): Page<ReviewTask>
+
     fun findByOwnerIdAndStatus(
         ownerId: UUID,
         status: ReviewTaskStatus,

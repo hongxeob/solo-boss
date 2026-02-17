@@ -10,6 +10,7 @@ package com.soloboss.ai.domain.interaction
  *                                   → FAILED
  * RECEIVED → FAILED (어느 단계에서든 실패 가능)
  * OCR_DONE → FAILED
+ * NEEDS_REVIEW → AUTO_SAVED (수동 검토 완료)
  * NEEDS_REVIEW → EXPIRED
  * ```
  */
@@ -53,7 +54,7 @@ enum class IngestJobStatus {
             RECEIVED -> setOf(OCR_DONE, FAILED)
             OCR_DONE -> setOf(STRUCTURED, FAILED)
             STRUCTURED -> setOf(AUTO_SAVED, NEEDS_REVIEW, FAILED)
-            NEEDS_REVIEW -> setOf(EXPIRED)
+            NEEDS_REVIEW -> setOf(AUTO_SAVED, EXPIRED)
             AUTO_SAVED, FAILED, EXPIRED -> emptySet()
         }
 }
