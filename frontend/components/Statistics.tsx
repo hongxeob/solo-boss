@@ -3,73 +3,93 @@
 import { useEffect, useState } from 'react';
 import { StatsData } from '../types';
 import { api } from '../lib/api';
+import { TrendingUp, Timer, Target, BarChart3 } from 'lucide-react';
 
 export default function Statistics() {
   const [stats, setStats] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock 데이터로 우선 세팅 (API 완성 전)
-    setStats({
-      monthlyRevenue: 12500000,
-      projectCount: 8,
-      aiAccuracy: 92,
-      timeSaved: 14,
-      revenueByMonth: [
-        { month: '3월', amount: 800 },
-        { month: '4월', amount: 1100 },
-        { month: '5월', amount: 1250 }
-      ]
-    });
+    api.getStats()
+      .then(setStats)
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <div className="animate-pulse text-primary font-medium">비즈니스 리포트 생성 중...</div>
+    </div>
+  );
 
   if (!stats) return null;
 
   return (
     <div className="space-y-6">
       {/* 주요 지표 */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-slate-900 p-5 rounded-3xl border border-slate-800">
-          <p className="text-slate-500 text-xs mb-1">이번 달 수익</p>
-          <h3 className="text-xl font-bold text-indigo-400">₩{(stats.monthlyRevenue/10000).toLocaleString()}만</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-surface p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+            <TrendingUp className="w-12 h-12 text-secondary" />
+          </div>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2">Monthly Revenue</p>
+          <h3 className="text-2xl font-black text-secondary">
+            ₩{(stats.monthlyRevenue / 10000).toLocaleString()}만
+          </h3>
         </div>
-        <div className="bg-slate-900 p-5 rounded-3xl border border-slate-800">
-          <p className="text-slate-500 text-xs mb-1">진행 프로젝트</p>
-          <h3 className="text-xl font-bold text-slate-100">{stats.projectCount}개</h3>
+        <div className="bg-surface p-6 rounded-[2rem] border border-white/5 shadow-xl">
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2">Active Projects</p>
+          <h3 className="text-2xl font-black text-slate-100">{stats.projectCount}개</h3>
         </div>
       </div>
 
       {/* AI 효율 섹션 */}
-      <div className="bg-indigo-600/10 border border-indigo-500/20 p-6 rounded-3xl">
-        <div className="flex justify-between items-end mb-4">
+      <div className="bg-primary/10 border border-primary/20 p-8 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <h4 className="text-indigo-200 text-sm font-semibold">AI 업무 자동화 효과</h4>
-            <p className="text-slate-400 text-[10px]">지난 30일 기준</p>
+            <h4 className="text-primary text-sm font-black uppercase tracking-tighter">AI Automation Impact</h4>
+            <p className="text-slate-500 text-[10px] font-medium uppercase tracking-widest">Powered by Gemini 1.5</p>
           </div>
-          <span className="text-2xl">🚀</span>
+          <div className="w-10 h-10 bg-primary/20 rounded-2xl flex items-center justify-center">
+            <Target className="w-5 h-5 text-primary" />
+          </div>
         </div>
-        <div className="flex gap-8">
-          <div>
-            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">추출 정확도</p>
-            <p className="text-xl font-bold text-indigo-300">{stats.aiAccuracy}%</p>
+        <div className="grid grid-cols-2 gap-10">
+          <div className="space-y-1">
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+              <Target className="w-3 h-3" /> Accuracy
+            </p>
+            <p className="text-3xl font-black text-slate-100">{stats.aiAccuracy}%</p>
           </div>
-          <div>
-            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">절약된 시간</p>
-            <p className="text-xl font-bold text-indigo-300">{stats.timeSaved}시간</p>
+          <div className="space-y-1">
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+              <Timer className="w-3 h-3" /> Time Saved
+            </p>
+            <p className="text-3xl font-black text-slate-100">{stats.timeSaved}h</p>
           </div>
         </div>
       </div>
 
-      {/* 단순 차트 시각화 */}
-      <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800">
-        <h4 className="text-sm font-semibold mb-6">월별 수익 추이</h4>
-        <div className="flex items-end justify-around h-32 gap-2">
+      {/* 수익 차트 */}
+      <div className="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-xl">
+        <div className="flex items-center justify-between mb-8">
+          <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-primary" /> Revenue Trend
+          </h4>
+        </div>
+        <div className="flex items-end justify-around h-40 gap-4">
           {stats.revenueByMonth.map((item) => (
-            <div key={item.month} className="flex flex-col items-center flex-1 gap-2">
-              <div 
-                className="w-full bg-indigo-500/20 border-t-2 border-indigo-500 rounded-t-lg transition-all duration-1000" 
-                style={{ height: `${(item.amount / 1500) * 100}%` }}
-              />
-              <span className="text-[10px] text-slate-500">{item.month}</span>
+            <div key={item.month} className="flex flex-col items-center flex-1 gap-4 group">
+              <div className="relative w-full flex items-end justify-center">
+                <div 
+                  className="w-full bg-primary/20 border-t-4 border-primary rounded-t-2xl transition-all duration-1000 group-hover:bg-primary/40 group-hover:border-secondary" 
+                  style={{ height: `${(item.amount / 1500) * 100}%` }}
+                />
+                <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-background px-2 py-1 rounded-md text-[9px] font-bold text-secondary border border-white/5">
+                  ₩{item.amount}만
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-slate-500 uppercase">{item.month}</span>
             </div>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { ClientDetail, ClientItem, MessageDraft, ReviewItem } from '../types';
+import { ClientDetail, ClientItem, MessageDraft, ReviewItem, StatsData } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 const OWNER_ID = process.env.NEXT_PUBLIC_OWNER_ID || '11111111-1111-1111-1111-111111111111';
@@ -24,6 +24,22 @@ type CustomerResponse = {
   inquirySummary: string | null;
 };
 
+type TaskResponse = {
+  id: string;
+  customerName: string;
+  taskType: string;
+  proposedMessage: string;
+  createdAt: string;
+};
+
+type StatsResponse = {
+  monthlyRevenue: number;
+  projectCount: number;
+  aiAccuracy: number;
+  timeSaved: number;
+  revenueByMonth: { month: string; amount: number }[];
+};
+
 const toText = (value: unknown): string => {
   if (value == null) return '';
   if (typeof value === 'string') return value;
@@ -32,26 +48,36 @@ const toText = (value: unknown): string => {
 };
 
 export const api = {
-  // TODO: 백엔드 follow-up API 구현 전 임시로 빈 목록 반환
+  // --- Tasks (오늘 할 일) ---
   async getTodayTasks(): Promise<MessageDraft[]> {
-    return [];
+    const res = await fetch(`${API_BASE_URL}/tasks?ownerId=${OWNER_ID}`);
+    if (!res.ok) throw new Error('Failed to fetch tasks');
+    const data = (await res.json()) as TaskResponse[];
+    return data.map(task => ({
+      id: task.id,
+      clientName: task.customerName,
+      content: task.proposedMessage,
+      type: task.taskType as any,
+    }));
   },
 
-  // TODO: 백엔드 follow-up send API 구현 전 mock 알림톡 호출로 대체
-  async sendMessage(taskId: string) {
-    const res = await fetch(`${API_BASE_URL}/notifications/alimtalk`, {
+  async sendTask(taskId: string) {
+    const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/send?ownerId=${OWNER_ID}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        templateCode: 'OCR_TEXT_ONLY',
-        to: `task:${taskId}`,
-        variables: {},
-      }),
     });
-    if (!res.ok) throw new Error('Failed to send message');
+    if (!res.ok) throw new Error('Failed to send task');
     return res.json();
   },
 
+  async snoozeTask(taskId: string) {
+    const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/snooze?ownerId=${OWNER_ID}`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to snooze task');
+    return res.json();
+  },
+
+  // --- Reviews (검수함) ---
   async getReviewItems(): Promise<ReviewItem[]> {
     const res = await fetch(`${API_BASE_URL}/reviews?ownerId=${OWNER_ID}&status=OPEN`);
     if (!res.ok) throw new Error('Failed to fetch reviews');
@@ -79,6 +105,7 @@ export const api = {
     return res.json();
   },
 
+  // --- Customers (고객 관리) ---
   async getClients(): Promise<ClientItem[]> {
     const res = await fetch(`${API_BASE_URL}/customers?ownerId=${OWNER_ID}`);
     if (!res.ok) throw new Error('Failed to fetch clients');
@@ -102,8 +129,15 @@ export const api = {
       tags: ['고객'],
       email: customer.email ?? '-',
       phone: customer.phone ?? '-',
-      totalRevenue: 0,
+      totalRevenue: 0, // TODO: 백엔드에서 매출 정보 제공 시 연결
       projectHistory: [],
     };
+  },
+
+  // --- Statistics (통계) ---
+  async getStats(): Promise<StatsData> {
+    const res = await fetch(`${API_BASE_URL}/stats?ownerId=${OWNER_ID}`);
+    if (!res.ok) throw new Error('Failed to fetch stats');
+    return res.json();
   },
 };
