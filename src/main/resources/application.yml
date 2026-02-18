@@ -51,3 +51,8 @@ logging:
   level:
     com.soloboss: DEBUG
     org.springframework.ai: DEBUG
+
+kakao:
+  webhook:
+    secret: ${KAKAO_WEBHOOK_SECRET:}
+    allow-deterministic-owner-fallback: ${KAKAO_WEBHOOK_ALLOW_DETERMINISTIC_FALLBACK:true}

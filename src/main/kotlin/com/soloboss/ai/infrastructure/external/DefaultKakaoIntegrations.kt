@@ -2,16 +2,34 @@ package com.soloboss.ai.infrastructure.external
 
 import com.soloboss.ai.application.integration.ChannelOwnerResolver
 import com.soloboss.ai.application.integration.KakaoSignatureVerifier
+import com.soloboss.ai.infrastructure.persistence.KakaoChannelRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import org.springframework.web.server.ResponseStatusException
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import org.springframework.http.HttpStatus
 
 @Component
-class DefaultChannelOwnerResolver : ChannelOwnerResolver {
-    override fun resolveOwnerId(channelId: String): UUID = UUID.nameUUIDFromBytes(channelId.toByteArray(StandardCharsets.UTF_8))
+class DefaultChannelOwnerResolver(
+    private val kakaoChannelRepository: KakaoChannelRepository,
+    @Value("\${kakao.webhook.allow-deterministic-owner-fallback:true}")
+    private val allowDeterministicFallback: Boolean = true,
+) : ChannelOwnerResolver {
+    override fun resolveOwnerId(channelId: String): UUID {
+        val mapped = kakaoChannelRepository.findByChannelIdAndIsActiveTrue(channelId)
+        if (mapped != null) {
+            return mapped.ownerId
+        }
+
+        if (allowDeterministicFallback) {
+            return UUID.nameUUIDFromBytes(channelId.toByteArray(StandardCharsets.UTF_8))
+        }
+
+        throw ResponseStatusException(HttpStatus.BAD_REQUEST, "등록되지 않은 카카오 채널입니다. channelId=$channelId")
+    }
 }
 
 @Component
