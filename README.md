@@ -1,48 +1,53 @@
-# SoloBoss AI 🚀
+# SoloBoss AI 🤖
 
-SoloBoss AI는 1인 사업자를 위한 올인원 AI CRM입니다.  
-고객 상담 데이터를 카카오톡에서 바로 받아 자동 정리하고, 팔로업 실행까지 이어지게 설계했습니다.
+**AI 오케스트레이션으로 개발하는 1인 사업자용 올인원 CRM.**  
+카카오톡 상담 데이터가 들어오면, AI 파이프라인이 자동으로 해석하고 저장하고 다음 행동(팔로업)까지 제안합니다.
 
-## Why SoloBoss AI 💡
+## 프로젝트 소개
 
-1인 사업자는 보통 영업, 상담, 운영, 정산을 혼자 처리합니다.  
-SoloBoss AI는 "기록하는 시간"을 줄이고 "후속 행동"에 집중하게 만듭니다.
+SoloBoss AI는 "기록"보다 "실행"이 중요한 1인 사업자를 위해 만들어졌습니다.
 
-- ✅ 입력은 카카오톡에서 끝난다.
-- ✅ AI가 고객 기록을 구조화해 적재한다.
-- ✅ 필요한 순간에 팔로업 초안을 제안한다.
+- 상담 캡처/음성 입력은 카카오톡에서 끝
+- AI가 고객 기록과 우선순위를 자동 정리
+- 매주 코칭 리포트로 매출/행동을 함께 제시
+
+## AI-First Product Vision 🚀
+
+이 프로젝트는 기능 구현 자체뿐 아니라 **AI 오케스트레이션 기반 제품 개발 방식**을 목표로 합니다.
+
+- Multi-step AI pipeline: `OCR -> 구조화 추출 -> 신뢰도 스코어링 -> 자동 저장/검수 분기`
+- Action AI: `팔로업 메시지 생성`, `주간 영업 코칭 리포트`
+- Human-in-the-loop: 신뢰도 낮은 건만 짧은 검수
+- Vibe coding + spec-driven 문서화: 아이디어 -> UX 리서치 -> API 스펙 -> OpenAPI -> handoff까지 연동
 
 ## Core Features ✨
 
-1. 상담 스크린샷/음성 자동 등록
-- 카카오톡 채널로 받은 스크린샷/음성을 OCR + LLM으로 구조화
-- 고객/상담/다음 행동을 CRM 데이터로 자동 저장
+1. 상담 스크린샷/음성 자동 등록  
+카카오톡으로 받은 자료를 AI가 CRM 스키마로 구조화하고 자동 저장합니다.
 
-2. 팔로업 메시지 초안 생성
-- 특정 시점(D-1, 당일 등)에 맞춰 초안 생성
-- 카카오 알림톡에서 바로 전송/수정/미루기
+2. 팔로업 메시지 초안 생성  
+고객 상태/시점에 맞춰 알림톡 기반 후속 메시지를 제안합니다.
 
-3. 관계 메모리 요약
-- 과거 상담 이력을 요약해 고객 맥락 유지
-- 다음 상담 전에 핵심 포인트를 빠르게 확인
+3. 관계 메모리 + 주간 코칭 리포트  
+상담 이력을 요약하고, 매주 월요일 "성과 + 바로 할 일"을 코치형으로 제공합니다.
 
-## UX Principle (MVP) 🎯
+## UX Strategy (MVP) 🎯
 
-- Primary Channel: 카카오톡 💬
-- Secondary Console: 모바일 최적화 최소 웹 콘솔 📱
+- Primary: 카카오톡 💬
+- Secondary: 모바일 최적화 최소 웹 콘솔 📱
 - Notification: 카카오 알림톡 🔔
 - Confidence Hybrid:
   - `overall_confidence >= 0.85` -> 자동 저장
   - `overall_confidence < 0.85` -> 검수 요청
 
-## End-to-End Flow 🔄
+## AI Orchestration Snapshot 🔄
 
-1. 사장님이 카카오톡에 상담 스크린샷/음성을 전송 📤
-2. Webhook 수신 후 즉시 접수 알림 발송 ⚡
-3. 비동기 파이프라인으로 OCR -> LLM 구조화 -> 신뢰도 평가 🤖
-4. 자동 저장 또는 검수 분기 처리 🧭
-5. 처리 결과를 알림톡으로 안내 📩
-6. 관계 메모리/임베딩/팔로업 태스크 갱신 🧠
+1. User input (Kakao): 스크린샷/음성 전송
+2. Ingestion: webhook 수신 + 멱등 처리
+3. Understanding: OCR + LLM 구조화 + confidence 평가
+4. Decision: 자동 저장 vs 검수 요청
+5. Action: 팔로업 초안/리마인드/주간 리포트 발송
+6. Learning loop: 결과가 다음 우선순위/확률 계산에 반영
 
 ## Tech Stack 🧱
 
@@ -78,18 +83,17 @@ docker compose up -d
 ./gradlew test
 ```
 
-## Project Documents 📚
+## Documentation Map 📚
 
-- UX research pack:
-  - `/Users/mediquitous/Desktop/project/solo-boss/ux-research/README.md`
-  - `/Users/mediquitous/Desktop/project/solo-boss/ux-research/notifications/alimtalk-templates.md`
-  - `/Users/mediquitous/Desktop/project/solo-boss/ux-research/api/kakao-ingestion-events.md`
-  - `/Users/mediquitous/Desktop/project/solo-boss/ux-research/diagrams/state-transitions.md`
+- UX/Flow specs: `docs/ux-research/README.md`
+- Kakao ingestion API/events: `docs/ux-research/api/kakao-ingestion-events.md`
+- Weekly coaching report API/events: `docs/ux-research/api/weekly-coaching-report-events.md`
+- Weekly report OpenAPI draft: `docs/ux-research/api/openapi-weekly-coaching-report.yaml`
+- Backend AI implementation prompt: `docs/ux-research/api/backend-ai-prompt-weekly-report.md`
 
-- Additional specs:
-  - `/Users/mediquitous/Desktop/project/solo-boss/docs/ai-spec/OCR_EXTRACTION_GUIDE.md`
-  - `/Users/mediquitous/Desktop/project/solo-boss/docs/ai-spec/FREELANCER_NOTE_EXTRACTION.md`
+## Current Status 🧪
 
-## Status 🧪
-
-MVP 설계 단계에서 카카오톡 중심 사용자 흐름과 이벤트 명세를 우선 확정한 상태입니다.
+- 카카오톡 중심 UX와 이벤트 상태 머신 설계 완료
+- 알림톡 카피/오류 페르소나/중복 UX 가이드 정리 완료
+- 주간 코칭 리포트 기획 및 OpenAPI 초안 완료
+- 백엔드 통합 구현 진행 중
